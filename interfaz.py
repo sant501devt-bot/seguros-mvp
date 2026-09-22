@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import os
 
 # Configuración de página con ícono y layout ancho
 st.set_page_config(
@@ -7,6 +8,11 @@ st.set_page_config(
     page_icon="",
     layout="wide"
 )
+
+# URL del backend: usa la variable de entorno BACKEND_URL si existe (para cuando
+# esté desplegado en internet), o localhost si estás probando en tu PC.
+# En Streamlit Cloud, esto se configura en "Secrets" -- lo vemos en el siguiente paso.
+BACKEND_URL = st.secrets.get("BACKEND_URL", os.getenv("BACKEND_URL", "http://127.0.0.1:8000"))
 
 # BARRA LATERAL (SIDEBAR) 
 with st.sidebar:
@@ -47,7 +53,7 @@ if st.button("Ejecutar Auditoría Completa", use_container_width=True) and archi
         try:
             # Petición HTTP al backend FastAPI
             files = {"file": (archivo_pdf.name, archivo_pdf.getvalue(), "application/pdf")}
-            url = f"http://127.0.0.1:8000/auditar?nombre_proyecto={nombre_proyecto}"
+            url = f"{BACKEND_URL}/auditar?nombre_proyecto={nombre_proyecto}"
             response = requests.post(url, files=files)
 
             if response.status_code == 200:
@@ -75,14 +81,16 @@ if st.button("Ejecutar Auditoría Completa", use_container_width=True) and archi
                 if riesgos:
                     for item in riesgos:
                         nivel = item.get("nivel_riesgo", "BAJO").upper()
-                        
+                        hallazgo = item.get("hallazgo", "")
+                        recomendacion = item.get("recomendacion", "")
+
                         # Color dinámico según el nivel de riesgo
                         if nivel == "ALTO":
-                            st.error(f"**[RIESGO ALTO]** {item.get('descripcion', '')}")
+                            st.error(f"**[RIESGO ALTO]** {hallazgo}\n\n*Recomendación: {recomendacion}*")
                         elif nivel == "MEDIO":
-                            st.warning(f"**[RIESGO MEDIO]** {item.get('descripcion', '')}")
+                            st.warning(f"**[RIESGO MEDIO]** {hallazgo}\n\n*Recomendación: {recomendacion}*")
                         else:
-                            st.info(f"**[RIESGO BAJO]** {item.get('descripcion', '')}")
+                            st.info(f"**[RIESGO BAJO]** {hallazgo}\n\n*Recomendación: {recomendacion}*")
                 else:
                     st.write("No se detectaron cláusulas de riesgo crítico.")
 
