@@ -1,0 +1,19 @@
+import os
+from dotenv import load_dotenv
+from supabase import Client, create_client
+
+# Forzar la lectura del archivo .env en la misma carpeta del script
+base_dir = os.path.dirname(os.path.abspath(__file__))
+dotenv_path = os.path.join(base_dir, ".env")
+load_dotenv(dotenv_path=dotenv_path)
+
+url: str = os.getenv("SUPABASE_URL")
+key: str = os.getenv("SUPABASE_KEY")
+
+# Verificación directa para identificar el fallo exacto
+if not url or not key:
+    raise ValueError(
+        f"Faltan las credenciales. Revisa que el archivo exista en: {dotenv_path}"
+    )
+
+supabase: Client = create_client(url, key)
